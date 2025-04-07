@@ -5,31 +5,43 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/kakuzops/ml-url/internal/api"
+	"github.com/kakuzops/ml-url/internal/metrics"
 	"github.com/kakuzops/ml-url/internal/repository"
 	"github.com/kakuzops/ml-url/internal/service"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
-	// Configuração do Redis
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
-		Password: "", // sem senha por padrão
-		DB:       0,  // usar banco padrão
+		Password: "",
+		DB:       0,
 	})
 
-	// Inicialização dos componentes
 	urlRepository := repository.NewRedisRepository(redisClient)
 	urlService := service.NewURLService(urlRepository)
 	urlHandler := api.NewURLHandler(urlService)
 
-	// Configuração do Gin
 	router := gin.Default()
 
-	// Configuração das rotas
+	// Adiciona o middleware de métricas
+	router.Use(metrics.MetricsMiddleware())
+
+	// Endpoint para métricas do Prometheus
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// Rotas da API
 	router.POST("/shorten", urlHandler.ShortenURL)
+	router.GET("/info/:shortURL", urlHandler.GetURLInfo)
 	router.GET("/:shortURL", urlHandler.RedirectToLongURL)
 
-	// Iniciar o servidor
+	// Endpoint de health check
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "UP",
+		})
+	})
+
 	log.Println("Servidor iniciado na porta 8080")
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("Erro ao iniciar o servidor: %v", err)

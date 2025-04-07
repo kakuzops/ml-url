@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"github.com/go-redis/redis/v8"
 	"github.com/kakuzops/ml-url/internal/domain"
 )
@@ -25,7 +26,10 @@ func (r *RedisRepository) Save(url *domain.URL) error {
 		return err
 	}
 
-	err = r.client.Set(r.ctx, url.ShortURL, data, url.ExpiresAt.Sub(url.CreatedAt)).Err()
+	// Extrair apenas o código da URL curta
+	shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
+
+	err = r.client.Set(r.ctx, shortCode, data, url.ExpiresAt.Sub(url.CreatedAt)).Err()
 	if err != nil {
 		return err
 	}
@@ -33,8 +37,8 @@ func (r *RedisRepository) Save(url *domain.URL) error {
 	return nil
 }
 
-func (r *RedisRepository) FindByShortURL(shortURL string) (*domain.URL, error) {
-	data, err := r.client.Get(r.ctx, shortURL).Bytes()
+func (r *RedisRepository) FindByShortURL(shortCode string) (*domain.URL, error) {
+	data, err := r.client.Get(r.ctx, shortCode).Bytes()
 	if err != nil {
 		if err == redis.Nil {
 			return nil, nil
@@ -51,6 +55,6 @@ func (r *RedisRepository) FindByShortURL(shortURL string) (*domain.URL, error) {
 	return &url, nil
 }
 
-func (r *RedisRepository) Delete(shortURL string) error {
-	return r.client.Del(r.ctx, shortURL).Err()
+func (r *RedisRepository) Delete(shortCode string) error {
+	return r.client.Del(r.ctx, shortCode).Err()
 } 
