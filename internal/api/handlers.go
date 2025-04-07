@@ -3,9 +3,10 @@ package api
 import (
 	"net/http"
 	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kakuzops/ml-url/internal/service"
-	"time"
 )
 
 type URLHandler struct {
@@ -92,4 +93,4 @@ func (h *URLHandler) RedirectToLongURL(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusMovedPermanently, longURL)
-} 
+}

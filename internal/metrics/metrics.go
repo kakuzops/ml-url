@@ -1,10 +1,11 @@
 package metrics
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"time"
 )
 
 var (
@@ -89,4 +90,4 @@ func IncrementActiveURLs() {
 
 func DecrementActiveURLs() {
 	activeURLs.Dec()
-} 
+}

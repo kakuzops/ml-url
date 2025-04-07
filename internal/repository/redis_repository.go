@@ -3,57 +3,66 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
-	"github.com/go-redis/redis/v8"
+	"time"
+
 	"github.com/kakuzops/ml-url/internal/domain"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisRepository struct {
-	client *redis.Client
-	ctx    context.Context
+	client  *redis.Client
+	baseURL string
 }
 
-func NewRedisRepository(client *redis.Client) *RedisRepository {
+func NewRedisRepository(client *redis.Client, baseURL string) *RedisRepository {
 	return &RedisRepository{
-		client: client,
-		ctx:    context.Background(),
+		client:  client,
+		baseURL: baseURL,
 	}
 }
 
 func (r *RedisRepository) Save(url *domain.URL) error {
 	data, err := json.Marshal(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal URL: %w", err)
 	}
 
-	shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
+	ctx := context.Background()
+	shortCode := strings.TrimPrefix(url.ShortURL, r.baseURL+"/")
+	key := fmt.Sprintf("url:%s", shortCode)
 
-	err = r.client.Set(r.ctx, shortCode, data, url.ExpiresAt.Sub(url.CreatedAt)).Err()
-	if err != nil {
-		return err
+	expiration := time.Until(url.ExpiresAt)
+	if expiration < 0 {
+		expiration = 0
 	}
 
-	return nil
+	return r.client.Set(ctx, key, data, expiration).Err()
 }
 
 func (r *RedisRepository) FindByShortURL(shortCode string) (*domain.URL, error) {
-	data, err := r.client.Get(r.ctx, shortCode).Bytes()
+	ctx := context.Background()
+	key := fmt.Sprintf("url:%s", shortCode)
+
+	data, err := r.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, nil
+			return nil, fmt.Errorf("URL not found")
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get URL: %w", err)
 	}
 
 	var url domain.URL
-	err = json.Unmarshal(data, &url)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(data, &url); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal URL: %w", err)
 	}
 
 	return &url, nil
 }
 
 func (r *RedisRepository) Delete(shortCode string) error {
-	return r.client.Del(r.ctx, shortCode).Err()
-} 
+	ctx := context.Background()
+	key := fmt.Sprintf("url:%s", shortCode)
+	return r.client.Del(ctx, key).Err()
+}

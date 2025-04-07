@@ -4,21 +4,24 @@ import (
 	"strings"
 	"testing"
 	"time"
+
 	"github.com/kakuzops/ml-url/internal/domain"
 )
 
 type mockRepository struct {
-	urls map[string]*domain.URL
+	urls    map[string]*domain.URL
+	baseURL string
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		urls: make(map[string]*domain.URL),
+		urls:    make(map[string]*domain.URL),
+		baseURL: "http://url.li",
 	}
 }
 
 func (m *mockRepository) Save(url *domain.URL) error {
-	shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
+	shortCode := strings.TrimPrefix(url.ShortURL, m.baseURL+"/")
 	m.urls[shortCode] = url
 	return nil
 }
@@ -38,7 +41,7 @@ func (m *mockRepository) Delete(shortCode string) error {
 
 func TestShortenURL(t *testing.T) {
 	repo := newMockRepository()
-	service := NewURLService(repo)
+	service := NewURLService(repo, "http://url.li", 24*time.Hour)
 
 	longURL := "https://www.google.com.br"
 	url, err := service.ShortenURL(longURL)
@@ -63,7 +66,7 @@ func TestShortenURL(t *testing.T) {
 
 func TestGetLongURL(t *testing.T) {
 	repo := newMockRepository()
-	service := NewURLService(repo)
+	service := NewURLService(repo, "http://url.li", 24*time.Hour)
 
 	longURL := "https://www.google.com.br"
 	url, _ := service.ShortenURL(longURL)
@@ -81,7 +84,7 @@ func TestGetLongURL(t *testing.T) {
 
 func TestGetExpiredURL(t *testing.T) {
 	repo := newMockRepository()
-	service := NewURLService(repo)
+	service := NewURLService(repo, "http://url.li", 24*time.Hour)
 
 	shortCode := "expired"
 	url := &domain.URL{
@@ -97,4 +100,4 @@ func TestGetExpiredURL(t *testing.T) {
 	if err == nil {
 		t.Error("Esperado erro de URL expirada, mas nenhum erro foi retornado")
 	}
-} 
+}

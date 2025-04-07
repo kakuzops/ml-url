@@ -1,78 +1,50 @@
 package service
 
 import (
-	"crypto/sha256"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
+
 	"github.com/kakuzops/ml-url/internal/domain"
 )
 
-const baseURL = "http://url.li/"
-
 type URLService struct {
-	repository domain.URLRepository
+	repo     domain.URLRepository
+	baseURL  string
+	duration time.Duration
 }
 
-func NewURLService(repository domain.URLRepository) *URLService {
+func NewURLService(repo domain.URLRepository, baseURL string, duration time.Duration) *URLService {
 	return &URLService{
-		repository: repository,
+		repo:     repo,
+		baseURL:  baseURL,
+		duration: duration,
 	}
 }
 
 func (s *URLService) ShortenURL(longURL string) (*domain.URL, error) {
-	if !strings.HasPrefix(longURL, "http://") && !strings.HasPrefix(longURL, "https://") {
-		longURL = "http://" + longURL
+	if !hasProtocol(longURL) {
+		longURL = "https://" + longURL
 	}
 
-	hash := sha256.Sum256([]byte(longURL))
-	shortCode := base64.URLEncoding.EncodeToString(hash[:])[:8]
-	shortURL := baseURL + shortCode
+	shortCode, err := generateShortCode()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate short code: %w", err)
+	}
 
 	url := &domain.URL{
-		ID:        fmt.Sprintf("url_%d", time.Now().UnixNano()),
+		ShortURL:  shortCode,
 		LongURL:   longURL,
-		ShortURL:  shortURL,
+		ExpiresAt: time.Now().Add(s.duration),
 		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}
 
-	existingURL, err := s.repository.FindByShortURL(shortCode)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao verificar URL existente: %v", err)
+	if err := s.repo.Save(url); err != nil {
+		return nil, fmt.Errorf("failed to save URL: %w", err)
 	}
 
-	if existingURL != nil && time.Now().Before(existingURL.ExpiresAt) {
-		return existingURL, nil
-	}
-
-	err = s.repository.Save(url)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao salvar URL: %v", err)
-	}
-
-	return url, nil
-}
-
-func (s *URLService) GetURLInfo(shortCode string) (*domain.URL, error) {
-	url, err := s.repository.FindByShortURL(shortCode)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar URL: %v", err)
-	}
-
-	if url == nil {
-		return nil, fmt.Errorf("URL não encontrada")
-	}
-
-	if time.Now().After(url.ExpiresAt) {
-		s.repository.Delete(shortCode)
-		return nil, fmt.Errorf("URL expirada")
-	}
-
-	if !strings.HasPrefix(url.LongURL, "http://") && !strings.HasPrefix(url.LongURL, "https://") {
-		url.LongURL = "http://" + url.LongURL
-	}
+	url.ShortURL = fmt.Sprintf("%s/%s", s.baseURL, shortCode)
 
 	return url, nil
 }
@@ -82,6 +54,40 @@ func (s *URLService) GetLongURL(shortCode string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return url.LongURL, nil
-} 
+}
+
+func (s *URLService) GetURLInfo(shortCode string) (*domain.URL, error) {
+	url, err := s.repo.FindByShortURL(shortCode)
+	if err != nil {
+		return nil, fmt.Errorf("URL not found: %w", err)
+	}
+
+	if time.Now().After(url.ExpiresAt) {
+		return nil, fmt.Errorf("URL has expired")
+	}
+
+	if !hasProtocol(url.LongURL) {
+		url.LongURL = "https://" + url.LongURL
+	}
+
+	if err := s.repo.Save(url); err != nil {
+		return nil, fmt.Errorf("failed to update last access: %w", err)
+	}
+
+	url.ShortURL = fmt.Sprintf("%s/%s", s.baseURL, url.ShortURL)
+
+	return url, nil
+}
+
+func generateShortCode() (string, error) {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b)[:8], nil
+}
+
+func hasProtocol(url string) bool {
+	return len(url) > 7 && (url[:7] == "http://" || url[:8] == "https://")
+}

@@ -16,4 +16,4 @@ type URLRepository interface {
 	Save(url *URL) error
 	FindByShortURL(shortURL string) (*URL, error)
 	Delete(shortURL string) error
-} 
+}
