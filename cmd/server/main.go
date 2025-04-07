@@ -24,18 +24,14 @@ func main() {
 
 	router := gin.Default()
 
-	// Adiciona o middleware de métricas
 	router.Use(metrics.MetricsMiddleware())
 
-	// Endpoint para métricas do Prometheus
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// Rotas da API
 	router.POST("/shorten", urlHandler.ShortenURL)
 	router.GET("/info/:shortURL", urlHandler.GetURLInfo)
 	router.GET("/:shortURL", urlHandler.RedirectToLongURL)
 
-	// Endpoint de health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "UP",

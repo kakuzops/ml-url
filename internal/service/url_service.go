@@ -70,7 +70,6 @@ func (s *URLService) GetURLInfo(shortCode string) (*domain.URL, error) {
 		return nil, fmt.Errorf("URL expirada")
 	}
 
-	// Garantir que a URL tenha o protocolo
 	if !strings.HasPrefix(url.LongURL, "http://") && !strings.HasPrefix(url.LongURL, "https://") {
 		url.LongURL = "http://" + url.LongURL
 	}

@@ -47,34 +47,28 @@ var (
 	)
 )
 
-// MetricsMiddleware retorna um middleware Gin que coleta métricas
 func MetricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Prossegue com o request
 		c.Next()
 
-		// Não coletar métricas para o endpoint do prometheus
 		if c.Request.URL.Path == "/metrics" {
 			return
 		}
 
-		// Registra a duração
 		duration := time.Since(start).Seconds()
 		httpRequestDuration.WithLabelValues(
 			c.Request.Method,
 			c.FullPath(),
 		).Observe(duration)
 
-		// Registra o total de requests
 		httpRequestsTotal.WithLabelValues(
 			c.Request.Method,
 			c.FullPath(),
 			string(rune(c.Writer.Status())),
 		).Inc()
 
-		// Registra métricas específicas
 		switch {
 		case c.FullPath() == "/shorten" && c.Request.Method == "POST":
 			if c.Writer.Status() == 201 {
@@ -89,12 +83,10 @@ func MetricsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// IncrementActiveURLs incrementa o contador de URLs ativas
 func IncrementActiveURLs() {
 	activeURLs.Inc()
 }
 
-// DecrementActiveURLs decrementa o contador de URLs ativas
 func DecrementActiveURLs() {
 	activeURLs.Dec()
 } 

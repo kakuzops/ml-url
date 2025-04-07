@@ -57,7 +57,6 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 func (h *URLHandler) GetURLInfo(c *gin.Context) {
 	shortCode := c.Param("shortURL")
 
-	// Remover qualquer prefixo de domínio se presente
 	shortCode = strings.TrimPrefix(shortCode, "http://")
 	shortCode = strings.TrimPrefix(shortCode, "https://")
 	shortCode = strings.TrimPrefix(shortCode, "url.li/")

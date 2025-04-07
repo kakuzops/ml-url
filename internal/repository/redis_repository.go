@@ -26,7 +26,6 @@ func (r *RedisRepository) Save(url *domain.URL) error {
 		return err
 	}
 
-	// Extrair apenas o código da URL curta
 	shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
 
 	err = r.client.Set(r.ctx, shortCode, data, url.ExpiresAt.Sub(url.CreatedAt)).Err()
