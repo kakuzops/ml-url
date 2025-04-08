@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kakuzops/ml-url/internal/service"
 )
 
 type URLHandler struct {
-	urlService *service.URLService
+	urlService URLServiceInterface
 }
 
-func NewURLHandler(urlService *service.URLService) *URLHandler {
+func NewURLHandler(urlService URLServiceInterface) *URLHandler {
 	return &URLHandler{
 		urlService: urlService,
 	}
@@ -93,4 +92,19 @@ func (h *URLHandler) RedirectToLongURL(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusMovedPermanently, longURL)
+}
+
+func (h *URLHandler) DeleteURL(c *gin.Context) {
+	shortCode := c.Param("shortURL")
+
+	shortCode = strings.TrimPrefix(shortCode, "http://")
+	shortCode = strings.TrimPrefix(shortCode, "https://")
+	shortCode = strings.TrimPrefix(shortCode, "url.li/")
+
+	if err := h.urlService.DeleteURL(shortCode); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "URL deleted successfully"})
 }

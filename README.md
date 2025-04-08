@@ -1,40 +1,40 @@
 # URL Shortener Service
 
-Serviço de encurtamento de URLs com expiração automática, desenvolvido em Go.
+URL shortening service with automatic expiration, developed in Go.
 
-## Características
+## Features
 
-- Encurtamento de URLs com códigos únicos
-- Expiração automática de URLs após 24 horas
-- Redirecionamento automático para URLs originais
-- Validação de URLs e protocolos
-- Métricas e monitoramento com Prometheus e Grafana
-- Armazenamento em Redis
-- API RESTful
-- Testes unitários
-- Documentação completa
+- URL shortening with unique codes
+- Automatic URL expiration after 24 hours
+- Automatic redirection to original URLs
+- URL and protocol validation
+- Metrics and monitoring with Prometheus and Grafana
+- Redis storage
+- RESTful API
+- Unit tests
+- Complete documentation
 
-## Arquitetura
+## Architecture
 
-O projeto segue a arquitetura CMD (Command Query Responsibility Segregation) com as seguintes camadas:
+The project follows the CMD (Command Query Responsibility Segregation) architecture with the following layers:
 
 ```
 .
-├── cmd/                    # Pontos de entrada da aplicação
-│   └── server/            # Servidor HTTP
-├── internal/              # Código privado da aplicação
-│   ├── api/              # Handlers HTTP e rotas
-│   ├── domain/           # Entidades e regras de negócio
-│   ├── repository/       # Camada de persistência
-│   ├── service/          # Lógica de negócio
-│   └── metrics/          # Métricas e monitoramento
-├── pkg/                   # Código público reutilizável
-└── test/                 # Testes de integração
+├── cmd/                    # Application entry points
+│   └── server/            # HTTP server
+├── internal/              # Private application code
+│   ├── api/              # HTTP handlers and routes
+│   ├── domain/           # Entities and business rules
+│   ├── repository/       # Persistence layer
+│   ├── service/          # Business logic
+│   └── metrics/          # Metrics and monitoring
+├── pkg/                   # Public reusable code
+└── test/                 # Integration tests
 ```
 
-## Endpoints da API
+## API Endpoints
 
-### 1. Encurtar URL
+### 1. Shorten URL
 ```bash
 POST /shorten
 Content-Type: application/json
@@ -44,26 +44,26 @@ Content-Type: application/json
 }
 ```
 
-Resposta:
+Response:
 ```json
 {
     "short_url": "http://url.li/Ab3Cd4Ef"
 }
 ```
 
-### 2. Redirecionar para URL Original
+### 2. Redirect to Original URL
 ```bash
 GET /:shortURL
 ```
 
-Redireciona automaticamente para a URL original.
+Automatically redirects to the original URL.
 
-### 3. Obter Informações da URL
+### 3. Get URL Information
 ```bash
 GET /info/:shortURL
 ```
 
-Resposta:
+Response:
 ```json
 {
     "short_url": "http://url.li/Ab3Cd4Ef",
@@ -72,164 +72,181 @@ Resposta:
 }
 ```
 
-### 4. Métricas
+### 4. Delete URL
+```bash
+DELETE /:shortURL
+```
+
+Response:
+```json
+{
+    "message": "URL deleted successfully"
+}
+```
+
+### 5. Metrics
 ```bash
 GET /metrics
 ```
-Endpoint Prometheus com métricas do serviço.
+Prometheus endpoint with service metrics.
 
-### 5. Health Check
+### 6. Health Check
 ```bash
 GET /health
 ```
-Endpoint para verificação de saúde do serviço.
+Endpoint for service health verification.
 
-## Métricas Disponíveis
+## Available Metrics
 
-### Métricas HTTP
-- `http_requests_total`: Total de requisições HTTP por método, endpoint e status
-- `http_request_duration_seconds`: Duração das requisições HTTP em segundos
+### HTTP Metrics
+- `http_requests_total`: Total HTTP requests by method, endpoint and status
+- `http_request_duration_seconds`: HTTP request duration in seconds
 
-### Métricas do Serviço
-- `url_shortening_total`: Total de URLs encurtadas
-- `url_redirects_total`: Total de redirecionamentos
-- `active_urls`: Número atual de URLs ativas
+### Service Metrics
+- `url_shortening_total`: Total shortened URLs
+- `url_redirects_total`: Total redirects
+- `active_urls`: Current number of active URLs
 
-## Monitoramento
+## Monitoring
 
-O serviço inclui integração com Prometheus e Grafana para monitoramento:
+The service includes integration with Prometheus and Grafana for monitoring:
 
 ### Prometheus
 - Endpoint: `http://localhost:9090`
-- Configuração em `prometheus.yml`
-- Coleta métricas a cada 15 segundos
+- Configuration in `prometheus.yml`
+- Collects metrics every 15 seconds
 
 ### Grafana
 - Interface: `http://localhost:3000`
-- Login padrão: admin/admin
-- Dashboards pré-configurados para:
-  - Taxa de requisições
-  - Latência média
-  - URLs ativas
-  - Total de URLs encurtadas
-  - Taxa de sucesso
-  - Redirecionamentos
+- Default login: admin/admin
+- Pre-configured dashboards for:
+  - Request rate
+  - Average latency
+  - Active URLs
+  - Total shortened URLs
+  - Success rate
+  - Redirects
 
-## Requisitos
+## Requirements
 
-- Go 1.21 ou superior
-- Docker e Docker Compose
+- Go 1.21 or higher
+- Docker and Docker Compose
 - Redis
 
-## Instalação
+## Installation
 
-1. Clone o repositório:
+1. Clone the repository:
 ```bash
-git clone https://github.com/seu-usuario/url-shortener.git
+git clone https://github.com/your-username/url-shortener.git
 cd url-shortener
 ```
 
-2. Instale as dependências:
+2. Install dependencies:
 ```bash
 go mod download
 ```
 
-3. Inicie os serviços com Docker Compose:
+3. Start services with Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-4. Execute a aplicação:
+4. Run the application:
 ```bash
 go run cmd/server/main.go
 ```
 
-## Testes
+## Tests
 
-Execute os testes unitários:
+Run unit tests:
 ```bash
 go test ./...
 ```
 
-Execute os testes de integração:
+Run integration tests:
 ```bash
 go test ./test/...
 ```
 
-### Testes de Carga com K6
+### Load Testing with K6
 
-O projeto inclui testes de carga usando K6. Para executar os testes:
+The project includes load testing using K6. To run the tests:
 
-1. Certifique-se de que o serviço está rodando:
+1. Make sure the service is running:
 ```bash
 docker-compose up -d
 ```
 
-2. Execute o teste de carga:
+2. Run the load test:
 ```bash
 docker-compose run k6 run /scripts/load-test.js
 ```
 
-O teste de carga inclui:
-- Simulação de carga progressiva (50-100 usuários virtuais)
-- Teste de todos os endpoints da API
-- Métricas de performance e erros
-- Integração com Prometheus para visualização das métricas
+The load test includes:
+- Progressive load simulation (50-100 virtual users)
+- Testing of all API endpoints
+- Performance and error metrics
+- Integration with Prometheus for metric visualization
 
-#### Configurações do Teste
-- Duração total: 9 minutos
-- Estágios:
-  - 1 min: Rampa de subida para 50 usuários
-  - 3 min: Manter 50 usuários
-  - 1 min: Aumentar para 100 usuários
-  - 3 min: Manter 100 usuários
-  - 1 min: Rampa de descida
+#### Test Configuration
+- Total duration: 9 minutes
+- Stages:
+  - 1 min: Ramp up to 50 users
+  - 3 min: Maintain 50 users
+  - 1 min: Increase to 100 users
+  - 3 min: Maintain 100 users
+  - 1 min: Ramp down
 - Thresholds:
-  - 95% das requisições devem completar em menos de 500ms
-  - Taxa de erro deve ser menor que 10%
+  - 95% of requests must complete in less than 500ms
+  - Error rate must be less than 10%
 
-#### Visualizando Resultados
-Os resultados dos testes de carga são automaticamente enviados para o Prometheus e podem ser visualizados no Grafana:
-1. Acesse o Grafana (http://localhost:3000)
-2. Importe o dashboard de testes de carga
-3. Visualize as métricas de performance
+#### Viewing Results
+Load test results are automatically sent to Prometheus and can be viewed in Grafana:
+1. Access Grafana (http://localhost:3000)
+2. Import the load test dashboard
+3. View performance metrics
 
-## Exemplo de Uso
+## Usage Example
 
-1. Encurtar uma URL:
+1. Shorten a URL:
 ```bash
 curl -X POST http://localhost:8080/shorten \
   -H "Content-Type: application/json" \
   -d '{"url": "https://www.example.com"}'
 ```
 
-2. Obter informações da URL:
+2. Get URL information:
 ```bash
 curl http://localhost:8080/info/Ab3Cd4Ef
 ```
 
-3. Acessar a URL encurtada:
+3. Access the shortened URL:
 ```bash
 curl -L http://localhost:8080/Ab3Cd4Ef
 ```
 
-## Configuração do Ambiente
+4. Delete a URL:
+```bash
+curl -X DELETE http://localhost:8080/Ab3Cd4Ef
+```
 
-O projeto utiliza variáveis de ambiente para configuração. Copie o arquivo `.env.example` para `.env` e ajuste as variáveis conforme necessário:
+## Environment Configuration
+
+The project uses environment variables for configuration. Copy the `.env.example` file to `.env` and adjust the variables as needed:
 
 ```bash
 cp .env.example .env
 ```
 
-### Variáveis de Ambiente
+### Environment Variables
 
-- `SERVER_PORT`: Porta do servidor HTTP (padrão: 8080)
-- `REDIS_HOST`: Host do Redis (padrão: localhost)
-- `REDIS_PORT`: Porta do Redis (padrão: 6379)
-- `REDIS_PASSWORD`: Senha do Redis (opcional)
-- `BASE_URL`: URL base para as URLs encurtadas (padrão: http://url.li)
-- `URL_DURATION`: Duração de expiração das URLs (padrão: 24h)
+- `SERVER_PORT`: HTTP server port (default: 8080)
+- `REDIS_HOST`: Redis host (default: localhost)
+- `REDIS_PORT`: Redis port (default: 6379)
+- `REDIS_PASSWORD`: Redis password (optional)
+- `BASE_URL`: Base URL for shortened URLs (default: http://url.li)
+- `URL_DURATION`: URL expiration duration (default: 24h)
 
-## Licença
+## License
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

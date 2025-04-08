@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -29,7 +30,7 @@ func (m *mockRepository) Save(url *domain.URL) error {
 func (m *mockRepository) FindByShortURL(shortCode string) (*domain.URL, error) {
 	url, exists := m.urls[shortCode]
 	if !exists {
-		return nil, nil
+		return nil, fmt.Errorf("URL not found")
 	}
 	return url, nil
 }
@@ -100,4 +101,57 @@ func TestGetExpiredURL(t *testing.T) {
 	if err == nil {
 		t.Error("Esperado erro de URL expirada, mas nenhum erro foi retornado")
 	}
+}
+
+func TestDeleteURL(t *testing.T) {
+
+	repo := newMockRepository()
+	service := NewURLService(repo, "http://url.li", 24*time.Hour)
+
+	t.Run("Delete existing URL", func(t *testing.T) {
+		longURL := "https://www.example.com"
+		url, err := service.ShortenURL(longURL)
+		if err != nil {
+			t.Fatalf("Erro inesperado ao criar URL: %v", err)
+		}
+
+		shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
+
+		err = service.DeleteURL(shortCode)
+		if err != nil {
+			t.Errorf("Erro inesperado ao deletar URL: %v", err)
+		}
+
+		_, err = service.GetURLInfo(shortCode)
+		if err == nil {
+			t.Error("URL ainda existe após deleção")
+		}
+	})
+
+	t.Run("Delete non-existing URL", func(t *testing.T) {
+		err := service.DeleteURL("naoexiste")
+		if err == nil {
+			t.Error("Esperado erro ao deletar URL inexistente, mas nenhum erro foi retornado")
+		}
+	})
+
+	t.Run("Delete already deleted URL", func(t *testing.T) {
+		longURL := "https://www.example.com"
+		url, err := service.ShortenURL(longURL)
+		if err != nil {
+			t.Fatalf("Erro inesperado ao criar URL: %v", err)
+		}
+
+		shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
+
+		err = service.DeleteURL(shortCode)
+		if err != nil {
+			t.Errorf("Erro inesperado ao deletar URL: %v", err)
+		}
+
+		err = service.DeleteURL(shortCode)
+		if err == nil {
+			t.Error("Esperado erro ao deletar URL já deletada, mas nenhum erro foi retornado")
+		}
+	})
 }

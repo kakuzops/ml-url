@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kakuzops/ml-url/internal/domain"
+	"github.com/kakuzops/ml-url/internal/metrics"
 )
 
 type URLService struct {
@@ -90,4 +91,20 @@ func generateShortCode() (string, error) {
 
 func hasProtocol(url string) bool {
 	return len(url) > 7 && (url[:7] == "http://" || url[:8] == "https://")
+}
+
+func (s *URLService) DeleteURL(shortCode string) error {
+
+	_, err := s.repo.FindByShortURL(shortCode)
+	if err != nil {
+		return fmt.Errorf("URL not found: %w", err)
+	}
+
+	if err := s.repo.Delete(shortCode); err != nil {
+		return fmt.Errorf("failed to delete URL: %w", err)
+	}
+
+	metrics.DecrementActiveURLs()
+
+	return nil
 }
