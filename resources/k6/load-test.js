@@ -5,21 +5,27 @@ import { Rate } from 'k6/metrics';
 const errorRate = new Rate('errors');
 
 export const options = {
-  stages: [
-    { duration: '1m', target: 50 },
-    { duration: '3m', target: 50 },
-    { duration: '1m', target: 100 },
-    { duration: '3m', target: 100 },
-    { duration: '1m', target: 0 },
-  ],
+  scenarios: {
+    high_load: {
+      executor: 'ramping-vus',
+      startVUs: 1000,
+      stages: [
+        { duration: '1m', target: 5000 },
+        { duration: '2m', target: 10000 },
+        { duration: '5m', target: 11000 },
+        { duration: '10m', target: 11000 },
+        { duration: '2m', target: 0 },
+      ],
+    },
+  },
   thresholds: {
     http_req_duration: ['p(95)<500'],
     errors: ['rate<0.1'],
+    http_reqs: ['rate>33000'],
   },
 };
 
 const BASE_URL = 'http://host.docker.internal:8080';
-
 
 function generateRandomUrl() {
   const domains = ['example.com', 'test.com', 'demo.org'];

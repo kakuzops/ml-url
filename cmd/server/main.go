@@ -24,6 +24,15 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
+	db, err := config.NewDatabase()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if err := config.RunMigrations(db); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
 		Password: cfg.Redis.Password,
@@ -35,7 +44,7 @@ func main() {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
-	urlRepo := repository.NewRedisRepository(redisClient, cfg.BaseURL)
+	urlRepo := repository.NewCachedRepository(db, redisClient, cfg.BaseURL, 24*time.Hour)
 
 	urlService := service.NewURLService(urlRepo, cfg.BaseURL, cfg.Duration)
 

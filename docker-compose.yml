@@ -54,11 +54,30 @@ services:
     networks:
       - url-shortener-network
 
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: url_shortener
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d url_shortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - url-shortener-network
+
 volumes:
   redis_data:
   prometheus_data:
   grafana_data:
   k6_data:
+  postgres_data:
 
 networks:
   url-shortener-network:

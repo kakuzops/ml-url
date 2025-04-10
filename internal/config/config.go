@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	Server   ServerConfig
+	Postgres PostgresConfig
 	Redis    RedisConfig
 	BaseURL  string
 	Duration time.Duration
@@ -14,6 +15,14 @@ type Config struct {
 
 type ServerConfig struct {
 	Port string
+}
+
+type PostgresConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	DBName   string
 }
 
 type RedisConfig struct {
@@ -27,6 +36,13 @@ func LoadConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port: getEnv("SERVER_PORT", "8080"),
+		},
+		Postgres: PostgresConfig{
+			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Port:     getEnv("POSTGRES_PORT", "5432"),
+			User:     getEnv("POSTGRES_USER", "postgres"),
+			Password: getEnv("POSTGRES_PASSWORD", "postgres"),
+			DBName:   getEnv("POSTGRES_DB", "url_shortener"),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
