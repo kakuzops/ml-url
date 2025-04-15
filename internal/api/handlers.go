@@ -2,19 +2,24 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kakuzops/ml-url/internal/metrics"
+	"github.com/kakuzops/ml-url/internal/service"
 )
 
 type URLHandler struct {
-	urlService URLServiceInterface
+	urlService   URLServiceInterface
+	statsService *service.StatsService
 }
 
-func NewURLHandler(urlService URLServiceInterface) *URLHandler {
+func NewURLHandler(urlService URLServiceInterface, statsService *service.StatsService) *URLHandler {
 	return &URLHandler{
-		urlService: urlService,
+		urlService:   urlService,
+		statsService: statsService,
 	}
 }
 
@@ -87,6 +92,12 @@ func (h *URLHandler) RedirectToLongURL(c *gin.Context) {
 		return
 	}
 
+	if err := h.statsService.IncrementAccess(shortCode, longURL); err != nil {
+		c.Error(err)
+	}
+
+	metrics.UrlAccessCount.WithLabelValues(shortCode, longURL).Inc()
+
 	if !strings.HasPrefix(longURL, "http://") && !strings.HasPrefix(longURL, "https://") {
 		longURL = "http://" + longURL
 	}
@@ -107,4 +118,42 @@ func (h *URLHandler) DeleteURL(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "URL deleted successfully"})
+}
+
+func (h *URLHandler) GetTopURLs(c *gin.Context) {
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	stats, err := h.statsService.GetTopURLs(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"urls": stats,
+	})
+}
+
+func (h *URLHandler) GetURLStats(c *gin.Context) {
+	shortCode := c.Param("shortURL")
+
+	shortCode = strings.TrimPrefix(shortCode, "http://")
+	shortCode = strings.TrimPrefix(shortCode, "https://")
+	shortCode = strings.TrimPrefix(shortCode, "url.li/")
+
+	stats, err := h.statsService.GetURLStats(shortCode)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }

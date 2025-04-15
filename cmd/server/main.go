@@ -45,10 +45,10 @@ func main() {
 	}
 
 	urlRepo := repository.NewCachedRepository(db, redisClient, cfg.BaseURL, 24*time.Hour)
-
 	urlService := service.NewURLService(urlRepo, cfg.BaseURL, cfg.Duration)
+	statsService := service.NewStatsService(redisClient)
 
-	handlers := api.NewURLHandler(urlService)
+	handlers := api.NewURLHandler(urlService, statsService)
 
 	router := gin.Default()
 
@@ -66,6 +66,10 @@ func main() {
 	router.GET("/:shortURL", handlers.RedirectToLongURL)
 	router.GET("/info/:shortURL", handlers.GetURLInfo)
 	router.DELETE("/:shortURL", handlers.DeleteURL)
+
+	// Novos endpoints para estatísticas
+	router.GET("/stats/top", handlers.GetTopURLs)
+	router.GET("/stats/:shortURL", handlers.GetURLStats)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,

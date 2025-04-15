@@ -59,7 +59,7 @@ func TestDeleteURL(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := newMockURLService()
-	handler := NewURLHandler(mockService)
+	handler := NewURLHandler(mockService, nil)
 	router := gin.New()
 	router.DELETE("/:shortURL", handler.DeleteURL)
 

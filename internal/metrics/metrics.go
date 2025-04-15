@@ -46,6 +46,14 @@ var (
 			Help: "Current number of active shortened URLs",
 		},
 	)
+
+	UrlAccessCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "url_access_count",
+			Help: "Number of times each URL has been accessed",
+		},
+		[]string{"short_url", "long_url"},
+	)
 )
 
 func MetricsMiddleware() gin.HandlerFunc {
