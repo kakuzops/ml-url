@@ -67,8 +67,6 @@ func main() {
 	router.GET("/info/:shortURL", handlers.GetURLInfo)
 	router.DELETE("/:shortURL", handlers.DeleteURL)
 
-	// Novos endpoints para estatísticas
-	router.GET("/stats/top", handlers.GetTopURLs)
 	router.GET("/stats/:shortURL", handlers.GetURLStats)
 
 	srv := &http.Server{

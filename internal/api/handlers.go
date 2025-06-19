@@ -48,7 +48,7 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 		req.URL = "http://" + req.URL
 	}
 
-	url, err := h.urlService.ShortenURL(req.URL)
+	url, err := h.urlService.ShortenURL(c.Request.Context(), req.URL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -66,7 +66,7 @@ func (h *URLHandler) GetURLInfo(c *gin.Context) {
 	shortCode = strings.TrimPrefix(shortCode, "https://")
 	shortCode = strings.TrimPrefix(shortCode, "url.li/")
 
-	urlInfo, err := h.urlService.GetURLInfo(shortCode)
+	urlInfo, err := h.urlService.GetURLInfo(c.Request.Context(), shortCode)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -86,7 +86,7 @@ func (h *URLHandler) RedirectToLongURL(c *gin.Context) {
 	shortCode = strings.TrimPrefix(shortCode, "https://")
 	shortCode = strings.TrimPrefix(shortCode, "url.li/")
 
-	longURL, err := h.urlService.GetLongURL(shortCode)
+	longURL, err := h.urlService.GetLongURL(c.Request.Context(), shortCode)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -112,7 +112,7 @@ func (h *URLHandler) DeleteURL(c *gin.Context) {
 	shortCode = strings.TrimPrefix(shortCode, "https://")
 	shortCode = strings.TrimPrefix(shortCode, "url.li/")
 
-	if err := h.urlService.DeleteURL(shortCode); err != nil {
+	if err := h.urlService.DeleteURL(c.Request.Context(), shortCode); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}

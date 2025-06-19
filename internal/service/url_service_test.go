@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -21,13 +22,13 @@ func newMockRepository() *mockRepository {
 	}
 }
 
-func (m *mockRepository) Save(url *domain.URL) error {
+func (m *mockRepository) Save(ctx context.Context, url *domain.URL) error {
 	shortCode := strings.TrimPrefix(url.ShortURL, m.baseURL+"/")
 	m.urls[shortCode] = url
 	return nil
 }
 
-func (m *mockRepository) FindByShortURL(shortCode string) (*domain.URL, error) {
+func (m *mockRepository) FindByShortURL(ctx context.Context, shortCode string) (*domain.URL, error) {
 	url, exists := m.urls[shortCode]
 	if !exists {
 		return nil, fmt.Errorf("URL not found")
@@ -35,7 +36,7 @@ func (m *mockRepository) FindByShortURL(shortCode string) (*domain.URL, error) {
 	return url, nil
 }
 
-func (m *mockRepository) Delete(shortCode string) error {
+func (m *mockRepository) Delete(ctx context.Context, shortCode string) error {
 	delete(m.urls, shortCode)
 	return nil
 }
@@ -45,7 +46,7 @@ func TestShortenURL(t *testing.T) {
 	service := NewURLService(repo, "http://url.li", 24*time.Hour)
 
 	longURL := "https://www.google.com.br"
-	url, err := service.ShortenURL(longURL)
+	url, err := service.ShortenURL(context.Background(), longURL)
 
 	if err != nil {
 		t.Errorf("Erro inesperado ao encurtar URL: %v", err)
@@ -70,10 +71,10 @@ func TestGetLongURL(t *testing.T) {
 	service := NewURLService(repo, "http://url.li", 24*time.Hour)
 
 	longURL := "https://www.google.com.br"
-	url, _ := service.ShortenURL(longURL)
+	url, _ := service.ShortenURL(context.Background(), longURL)
 	shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
 
-	retrievedURL, err := service.GetLongURL(shortCode)
+	retrievedURL, err := service.GetLongURL(context.Background(), shortCode)
 	if err != nil {
 		t.Errorf("Erro inesperado ao recuperar URL: %v", err)
 	}
@@ -95,9 +96,9 @@ func TestGetExpiredURL(t *testing.T) {
 		CreatedAt: time.Now().Add(-25 * time.Hour),
 		ExpiresAt: time.Now().Add(-1 * time.Hour),
 	}
-	repo.Save(url)
+	repo.Save(context.Background(), url)
 
-	_, err := service.GetLongURL(shortCode)
+	_, err := service.GetLongURL(context.Background(), shortCode)
 	if err == nil {
 		t.Error("Esperado erro de URL expirada, mas nenhum erro foi retornado")
 	}
@@ -110,26 +111,26 @@ func TestDeleteURL(t *testing.T) {
 
 	t.Run("Delete existing URL", func(t *testing.T) {
 		longURL := "https://www.example.com"
-		url, err := service.ShortenURL(longURL)
+		url, err := service.ShortenURL(context.Background(), longURL)
 		if err != nil {
 			t.Fatalf("Erro inesperado ao criar URL: %v", err)
 		}
 
 		shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
 
-		err = service.DeleteURL(shortCode)
+		err = service.DeleteURL(context.Background(), shortCode)
 		if err != nil {
 			t.Errorf("Erro inesperado ao deletar URL: %v", err)
 		}
 
-		_, err = service.GetURLInfo(shortCode)
+		_, err = service.GetURLInfo(context.Background(), shortCode)
 		if err == nil {
 			t.Error("URL ainda existe após deleção")
 		}
 	})
 
 	t.Run("Delete non-existing URL", func(t *testing.T) {
-		err := service.DeleteURL("naoexiste")
+		err := service.DeleteURL(context.Background(), "naoexiste")
 		if err == nil {
 			t.Error("Esperado erro ao deletar URL inexistente, mas nenhum erro foi retornado")
 		}
@@ -137,19 +138,19 @@ func TestDeleteURL(t *testing.T) {
 
 	t.Run("Delete already deleted URL", func(t *testing.T) {
 		longURL := "https://www.example.com"
-		url, err := service.ShortenURL(longURL)
+		url, err := service.ShortenURL(context.Background(), longURL)
 		if err != nil {
 			t.Fatalf("Erro inesperado ao criar URL: %v", err)
 		}
 
 		shortCode := strings.TrimPrefix(url.ShortURL, "http://url.li/")
 
-		err = service.DeleteURL(shortCode)
+		err = service.DeleteURL(context.Background(), shortCode)
 		if err != nil {
 			t.Errorf("Erro inesperado ao deletar URL: %v", err)
 		}
 
-		err = service.DeleteURL(shortCode)
+		err = service.DeleteURL(context.Background(), shortCode)
 		if err == nil {
 			t.Error("Esperado erro ao deletar URL já deletada, mas nenhum erro foi retornado")
 		}

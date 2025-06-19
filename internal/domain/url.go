@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ func (u *URL) BeforeCreate(tx *gorm.DB) error {
 }
 
 type URLRepository interface {
-	Save(url *URL) error
-	FindByShortURL(shortURL string) (*URL, error)
-	Delete(shortURL string) error
+	Save(ctx context.Context, url *URL) error
+	FindByShortURL(ctx context.Context, shortURL string) (*URL, error)
+	Delete(ctx context.Context, shortURL string) error
 }

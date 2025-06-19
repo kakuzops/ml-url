@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -24,7 +25,7 @@ func NewURLService(repo domain.URLRepository, baseURL string, duration time.Dura
 	}
 }
 
-func (s *URLService) ShortenURL(longURL string) (*domain.URL, error) {
+func (s *URLService) ShortenURL(ctx context.Context, longURL string) (*domain.URL, error) {
 	if !hasProtocol(longURL) {
 		longURL = "https://" + longURL
 	}
@@ -41,7 +42,7 @@ func (s *URLService) ShortenURL(longURL string) (*domain.URL, error) {
 		CreatedAt: time.Now(),
 	}
 
-	if err := s.repo.Save(url); err != nil {
+	if err := s.repo.Save(ctx, url); err != nil {
 		return nil, fmt.Errorf("failed to save URL: %w", err)
 	}
 
@@ -50,16 +51,16 @@ func (s *URLService) ShortenURL(longURL string) (*domain.URL, error) {
 	return url, nil
 }
 
-func (s *URLService) GetLongURL(shortCode string) (string, error) {
-	url, err := s.GetURLInfo(shortCode)
+func (s *URLService) GetLongURL(ctx context.Context, shortCode string) (string, error) {
+	url, err := s.GetURLInfo(ctx, shortCode)
 	if err != nil {
 		return "", err
 	}
 	return url.LongURL, nil
 }
 
-func (s *URLService) GetURLInfo(shortCode string) (*domain.URL, error) {
-	url, err := s.repo.FindByShortURL(shortCode)
+func (s *URLService) GetURLInfo(ctx context.Context, shortCode string) (*domain.URL, error) {
+	url, err := s.repo.FindByShortURL(ctx, shortCode)
 	if err != nil {
 		return nil, fmt.Errorf("URL not found: %w", err)
 	}
@@ -72,7 +73,7 @@ func (s *URLService) GetURLInfo(shortCode string) (*domain.URL, error) {
 		url.LongURL = "https://" + url.LongURL
 	}
 
-	if err := s.repo.Save(url); err != nil {
+	if err := s.repo.Save(ctx, url); err != nil {
 		return nil, fmt.Errorf("failed to update last access: %w", err)
 	}
 
@@ -93,14 +94,14 @@ func hasProtocol(url string) bool {
 	return len(url) > 7 && (url[:7] == "http://" || url[:8] == "https://")
 }
 
-func (s *URLService) DeleteURL(shortCode string) error {
+func (s *URLService) DeleteURL(ctx context.Context, shortCode string) error {
 
-	_, err := s.repo.FindByShortURL(shortCode)
+	_, err := s.repo.FindByShortURL(ctx, shortCode)
 	if err != nil {
 		return fmt.Errorf("URL not found: %w", err)
 	}
 
-	if err := s.repo.Delete(shortCode); err != nil {
+	if err := s.repo.Delete(ctx, shortCode); err != nil {
 		return fmt.Errorf("failed to delete URL: %w", err)
 	}
 

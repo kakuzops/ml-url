@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,7 @@ func newMockURLService() *mockURLService {
 	}
 }
 
-func (m *mockURLService) ShortenURL(longURL string) (*domain.URL, error) {
+func (m *mockURLService) ShortenURL(ctx context.Context, longURL string) (*domain.URL, error) {
 	url := &domain.URL{
 		LongURL:   longURL,
 		ShortURL:  "testshort",
@@ -32,21 +33,21 @@ func (m *mockURLService) ShortenURL(longURL string) (*domain.URL, error) {
 	return url, nil
 }
 
-func (m *mockURLService) GetLongURL(shortCode string) (string, error) {
+func (m *mockURLService) GetLongURL(ctx context.Context, shortCode string) (string, error) {
 	if url, exists := m.urls[shortCode]; exists {
 		return url.LongURL, nil
 	}
 	return "", fmt.Errorf("URL not found")
 }
 
-func (m *mockURLService) GetURLInfo(shortCode string) (*domain.URL, error) {
+func (m *mockURLService) GetURLInfo(ctx context.Context, shortCode string) (*domain.URL, error) {
 	if url, exists := m.urls[shortCode]; exists {
 		return url, nil
 	}
 	return nil, fmt.Errorf("URL not found")
 }
 
-func (m *mockURLService) DeleteURL(shortCode string) error {
+func (m *mockURLService) DeleteURL(ctx context.Context, shortCode string) error {
 	if _, exists := m.urls[shortCode]; !exists {
 		return fmt.Errorf("URL not found")
 	}
@@ -64,7 +65,7 @@ func TestDeleteURL(t *testing.T) {
 	router.DELETE("/:shortURL", handler.DeleteURL)
 
 	t.Run("Delete existing URL", func(t *testing.T) {
-		url, _ := mockService.ShortenURL("https://www.example.com")
+		url, _ := mockService.ShortenURL(context.Background(), "https://www.example.com")
 		shortCode := url.ShortURL
 
 		req := httptest.NewRequest("DELETE", "/"+shortCode, nil)
